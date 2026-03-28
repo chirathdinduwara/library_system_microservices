@@ -3,6 +3,8 @@ import httpx
 from fastapi import APIRouter, Request, HTTPException
 from fastapi.responses import JSONResponse
 from dotenv import load_dotenv
+from pydantic import BaseModel
+from typing import Optional
 
 load_dotenv()
 
@@ -124,22 +126,35 @@ async def delete_staff(request: Request, staff_id: str):
 
 
 # ── RESERVATION SERVICE ───────────────────────────────────
-@router.get("/reservations")
+class ReservationCreate(BaseModel):
+    user_id: str
+    book_id: str
+ 
+class ReservationUpdate(BaseModel):
+    user_id: Optional[str] = None
+    book_id: Optional[str] = None
+    status: Optional[str] = None
+
+@router.get("/reservations", tags=["Reservations"])
 async def get_reservations(request: Request):
     return await forward(request, f"{RESERVATION_SERVICE}/reservations/")
-
-@router.post("/reservations")
-async def create_reservation(request: Request):
-    return await forward(request, f"{RESERVATION_SERVICE}/reservations/", json=await request.json())
-
-@router.get("/reservations/{reservation_id}")          # ← was missing
+ 
+@router.post("/reservations", tags=["Reservations"])
+async def create_reservation(request: Request, payload: ReservationCreate):
+    return await forward(request, f"{RESERVATION_SERVICE}/reservations/", json=payload.model_dump())
+ 
+@router.get("/reservations/{reservation_id}", tags=["Reservations"])
 async def get_reservation(request: Request, reservation_id: str):
     return await forward(request, f"{RESERVATION_SERVICE}/reservations/{reservation_id}")
-
-@router.patch("/reservations/{reservation_id}/cancel") # ← was missing
+ 
+@router.put("/reservations/{reservation_id}", tags=["Reservations"])
+async def update_reservation(request: Request, reservation_id: str, payload: ReservationUpdate):
+    return await forward(request, f"{RESERVATION_SERVICE}/reservations/{reservation_id}", json=payload.model_dump())
+ 
+@router.patch("/reservations/{reservation_id}/cancel", tags=["Reservations"])
 async def cancel_reservation(request: Request, reservation_id: str):
     return await forward(request, f"{RESERVATION_SERVICE}/reservations/{reservation_id}/cancel")
-
-@router.delete("/reservations/{reservation_id}")
+ 
+@router.delete("/reservations/{reservation_id}", tags=["Reservations"])
 async def delete_reservation(request: Request, reservation_id: str):
     return await forward(request, f"{RESERVATION_SERVICE}/reservations/{reservation_id}")
