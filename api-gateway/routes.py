@@ -1,148 +1,145 @@
 import os
-import requests
-from fastapi import APIRouter
+import httpx
+from fastapi import APIRouter, Request, HTTPException
+from fastapi.responses import JSONResponse
 from dotenv import load_dotenv
 
 load_dotenv()
 
 router = APIRouter()
 
-# Service URLs from .env
-BOOK_SERVICE = os.getenv("BOOK_SERVICE")
-MEMBER_SERVICE = os.getenv("MEMBER_SERVICE")
-BORROW_SERVICE = os.getenv("BORROW_SERVICE")
-REVIEW_SERVICE = os.getenv("REVIEW_SERVICE")
-STAFF_SERVICE = os.getenv("STAFF_SERVICE")
+# ── Service URLs from .env ────────────────────────────────
+BOOK_SERVICE        = os.getenv("BOOK_SERVICE")
+MEMBER_SERVICE      = os.getenv("MEMBER_SERVICE")
+BORROW_SERVICE      = os.getenv("BORROW_SERVICE")
+REVIEW_SERVICE      = os.getenv("REVIEW_SERVICE")
+STAFF_SERVICE       = os.getenv("STAFF_SERVICE")
 RESERVATION_SERVICE = os.getenv("RESERVATION_SERVICE")
 
+# ── Reusable async forward helper ────────────────────────
+async def forward(request: Request, url: str, **kwargs):
+    async with httpx.AsyncClient(timeout=10.0) as client:
+        try:
+            resp = await client.request(
+                method=request.method,
+                url=url,
+                headers={k: v for k, v in request.headers.items() if k != "host"},
+                **kwargs
+            )
+            return JSONResponse(status_code=resp.status_code, content=resp.json())
+        except httpx.ConnectError:
+            raise HTTPException(status_code=503, detail=f"Service unavailable: {url}")
+        except httpx.TimeoutException:
+            raise HTTPException(status_code=504, detail=f"Service timed out: {url}")
 
-# --------------- BOOK SERVICE ROUTES ---------------
+
+# ── BOOK SERVICE ──────────────────────────────────────────
 @router.get("/books")
-def get_books():
-    resp = requests.get(f"{BOOK_SERVICE}/books")
-    return resp.json()
+async def get_books(request: Request):
+    return await forward(request, f"{BOOK_SERVICE}/books")
 
 @router.post("/books")
-def create_book(payload: dict):
-    resp = requests.post(f"{BOOK_SERVICE}/books", json=payload)
-    return resp.json()
+async def create_book(request: Request):
+    return await forward(request, f"{BOOK_SERVICE}/books", json=await request.json())
 
 @router.put("/books/{book_id}")
-def update_book(book_id: str, payload: dict):
-    resp = requests.put(f"{BOOK_SERVICE}/books/{book_id}", json=payload)
-    return resp.json()
+async def update_book(request: Request, book_id: str):
+    return await forward(request, f"{BOOK_SERVICE}/books/{book_id}", json=await request.json())
 
 @router.delete("/books/{book_id}")
-def delete_book(book_id: str):
-    resp = requests.delete(f"{BOOK_SERVICE}/books/{book_id}")
-    return resp.json()
+async def delete_book(request: Request, book_id: str):
+    return await forward(request, f"{BOOK_SERVICE}/books/{book_id}")
 
 
-# --------------- MEMBER SERVICE ROUTES ---------------
+# ── MEMBER SERVICE ────────────────────────────────────────
 @router.get("/members")
-def get_members():
-    resp = requests.get(f"{MEMBER_SERVICE}/members")
-    return resp.json()
+async def get_members(request: Request):
+    return await forward(request, f"{MEMBER_SERVICE}/members")
 
 @router.post("/members")
-def create_member(payload: dict):
-    resp = requests.post(f"{MEMBER_SERVICE}/members", json=payload)
-    return resp.json()
+async def create_member(request: Request):
+    return await forward(request, f"{MEMBER_SERVICE}/members", json=await request.json())
 
 @router.put("/members/{member_id}")
-def update_member(member_id: str, payload: dict):
-    resp = requests.put(f"{MEMBER_SERVICE}/members/{member_id}", json=payload)
-    return resp.json()
+async def update_member(request: Request, member_id: str):
+    return await forward(request, f"{MEMBER_SERVICE}/members/{member_id}", json=await request.json())
 
 @router.delete("/members/{member_id}")
-def delete_member(member_id: str):
-    resp = requests.delete(f"{MEMBER_SERVICE}/members/{member_id}")
-    return resp.json()
+async def delete_member(request: Request, member_id: str):
+    return await forward(request, f"{MEMBER_SERVICE}/members/{member_id}")
 
 
-# --------------- BORROW SERVICE ROUTES ---------------
+# ── BORROW SERVICE ────────────────────────────────────────
 @router.get("/borrows")
-def get_borrows():
-    resp = requests.get(f"{BORROW_SERVICE}/borrows")
-    return resp.json()
+async def get_borrows(request: Request):
+    return await forward(request, f"{BORROW_SERVICE}/borrows")
 
 @router.post("/borrows")
-def create_borrow(payload: dict):
-    resp = requests.post(f"{BORROW_SERVICE}/borrows", json=payload)
-    return resp.json()
+async def create_borrow(request: Request):
+    return await forward(request, f"{BORROW_SERVICE}/borrows", json=await request.json())
 
 @router.put("/borrows/{borrow_id}")
-def update_borrow(borrow_id: str, payload: dict):
-    resp = requests.put(f"{BORROW_SERVICE}/borrows/{borrow_id}", json=payload)
-    return resp.json()
+async def update_borrow(request: Request, borrow_id: str):
+    return await forward(request, f"{BORROW_SERVICE}/borrows/{borrow_id}", json=await request.json())
 
 @router.delete("/borrows/{borrow_id}")
-def delete_borrow(borrow_id: str):
-    resp = requests.delete(f"{BORROW_SERVICE}/borrows/{borrow_id}")
-    return resp.json()
+async def delete_borrow(request: Request, borrow_id: str):
+    return await forward(request, f"{BORROW_SERVICE}/borrows/{borrow_id}")
 
 
-# --------------- REVIEW SERVICE ROUTES ---------------
+# ── REVIEW SERVICE ────────────────────────────────────────
 @router.get("/reviews")
-def get_reviews():
-    resp = requests.get(f"{REVIEW_SERVICE}/reviews")
-    return resp.json()
+async def get_reviews(request: Request):
+    return await forward(request, f"{REVIEW_SERVICE}/reviews")
 
 @router.post("/reviews")
-def create_review(payload: dict):
-    resp = requests.post(f"{REVIEW_SERVICE}/reviews", json=payload)
-    return resp.json()
+async def create_review(request: Request):
+    return await forward(request, f"{REVIEW_SERVICE}/reviews", json=await request.json())
 
 @router.put("/reviews/{review_id}")
-def update_review(review_id: str, payload: dict):
-    resp = requests.put(f"{REVIEW_SERVICE}/reviews/{review_id}", json=payload)
-    return resp.json()
+async def update_review(request: Request, review_id: str):
+    return await forward(request, f"{REVIEW_SERVICE}/reviews/{review_id}", json=await request.json())
 
 @router.delete("/reviews/{review_id}")
-def delete_review(review_id: str):
-    resp = requests.delete(f"{REVIEW_SERVICE}/reviews/{review_id}")
-    return resp.json()
+async def delete_review(request: Request, review_id: str):
+    return await forward(request, f"{REVIEW_SERVICE}/reviews/{review_id}")
 
 
-# --------------- STAFF SERVICE ROUTES ---------------
+# ── STAFF SERVICE ─────────────────────────────────────────
 @router.get("/staff")
-def get_staff():
-    resp = requests.get(f"{STAFF_SERVICE}/staff")
-    return resp.json()
+async def get_staff(request: Request):
+    return await forward(request, f"{STAFF_SERVICE}/staff")
 
 @router.post("/staff")
-def create_staff(payload: dict):
-    resp = requests.post(f"{STAFF_SERVICE}/staff", json=payload)
-    return resp.json()
+async def create_staff(request: Request):
+    return await forward(request, f"{STAFF_SERVICE}/staff", json=await request.json())
 
 @router.put("/staff/{staff_id}")
-def update_staff(staff_id: str, payload: dict):
-    resp = requests.put(f"{STAFF_SERVICE}/staff/{staff_id}", json=payload)
-    return resp.json()
+async def update_staff(request: Request, staff_id: str):
+    return await forward(request, f"{STAFF_SERVICE}/staff/{staff_id}", json=await request.json())
 
 @router.delete("/staff/{staff_id}")
-def delete_staff(staff_id: str):
-    resp = requests.delete(f"{STAFF_SERVICE}/staff/{staff_id}")
-    return resp.json()
+async def delete_staff(request: Request, staff_id: str):
+    return await forward(request, f"{STAFF_SERVICE}/staff/{staff_id}")
 
 
-# --------------- RESERVATION SERVICE ROUTES ---------------
+# ── RESERVATION SERVICE ───────────────────────────────────
 @router.get("/reservations")
-def get_reservations():
-    resp = requests.get(f"{RESERVATION_SERVICE}/reservations")
-    return resp.json()
+async def get_reservations(request: Request):
+    return await forward(request, f"{RESERVATION_SERVICE}/reservations/")
 
 @router.post("/reservations")
-def create_reservation(payload: dict):
-    resp = requests.post(f"{RESERVATION_SERVICE}/reservations", json=payload)
-    return resp.json()
+async def create_reservation(request: Request):
+    return await forward(request, f"{RESERVATION_SERVICE}/reservations/", json=await request.json())
 
-@router.put("/reservations/{reservation_id}")
-def update_reservation(reservation_id: str, payload: dict):
-    resp = requests.put(f"{RESERVATION_SERVICE}/reservations/{reservation_id}", json=payload)
-    return resp.json()
+@router.get("/reservations/{reservation_id}")          # ← was missing
+async def get_reservation(request: Request, reservation_id: str):
+    return await forward(request, f"{RESERVATION_SERVICE}/reservations/{reservation_id}")
+
+@router.patch("/reservations/{reservation_id}/cancel") # ← was missing
+async def cancel_reservation(request: Request, reservation_id: str):
+    return await forward(request, f"{RESERVATION_SERVICE}/reservations/{reservation_id}/cancel")
 
 @router.delete("/reservations/{reservation_id}")
-def delete_reservation(reservation_id: str):
-    resp = requests.delete(f"{RESERVATION_SERVICE}/reservations/{reservation_id}")
-    return resp.json()
+async def delete_reservation(request: Request, reservation_id: str):
+    return await forward(request, f"{RESERVATION_SERVICE}/reservations/{reservation_id}")

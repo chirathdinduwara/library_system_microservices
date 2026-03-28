@@ -1,1 +1,6 @@
-hello
+fastapi
+uvicorn
+motor                  # async MongoDB driver
+pydantic[email]
+pydantic-settings
+python-dotenv
